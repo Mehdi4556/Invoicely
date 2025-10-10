@@ -1,5 +1,6 @@
 import { Button } from "./ui/button";
 import { GoArrowUpRight } from "react-icons/go";
+import { Link } from "react-router-dom";
 
 export default function Hero() {
   return (
@@ -21,12 +22,14 @@ export default function Hero() {
           your business look as good as it performs.
         </p>
 
-        <Button className="bg-gradient-to-r from-blue-800 to-blue-800 text-white hover:opacity-90 transition-opacity px-3 py-1 cursor-pointer text-base font-medium  shadow-lg">
-          Get Started
-          <div className="ml-2 h-4 w-4 rounded-full bg-white/20 flex items-center justify-center">
-            <GoArrowUpRight className="h-2.5 w-2.5" />
-          </div>
-        </Button>
+        <Link to="/create-invoice">
+          <Button className="bg-gradient-to-r from-blue-800 to-blue-800 text-white hover:opacity-90 transition-opacity px-3 py-1 cursor-pointer text-base font-medium  shadow-lg">
+            Get Started
+            <div className="ml-2 h-4 w-4 rounded-full bg-white/20 flex items-center justify-center">
+              <GoArrowUpRight className="h-2.5 w-2.5" />
+            </div>
+          </Button>
+        </Link>
       </div>
     </section>
   );

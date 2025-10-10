@@ -1,17 +1,23 @@
 import './App.css'
-import Header from './components/Header'
-import Hero from './components/Hero'
-import FeatureCards from './components/FeatureCards'
-import InvoicelyLogo3D from './components/InvoicelyLogo3D'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Layout from './components/Layout'
+import Home from './pages/Home'
+import CreateInvoice from './pages/CreateInvoice'
+import Invoices from './pages/Invoices'
+import Assets from './pages/Assets'
 
 function App() {
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <Hero />
-      <FeatureCards />
-      <InvoicelyLogo3D />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route element={<Layout />}>
+          <Route path="/create-invoice" element={<CreateInvoice />} />
+          <Route path="/invoices" element={<Invoices />} />
+          <Route path="/assets" element={<Assets />} />
+        </Route>
+      </Routes>
+    </Router>
   )
 }
 

@@ -2,6 +2,7 @@ import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
 import { GoArrowUpRight } from "react-icons/go";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function Header() {
   const [isDark, setIsDark] = useState(false);
@@ -39,6 +40,7 @@ export default function Header() {
           />
 
           {/* Main CTA Button */}
+          <Link to="/create-invoice">
             <Button
               variant="ghost"
               className="text-foreground hover:bg-transparent hover:text-foreground cursor-pointer dark:bg-[#2a2a2a] dark:hover:bg-[#2a2a2a] dark:text-white"
@@ -47,7 +49,8 @@ export default function Header() {
             <div className="ml-1 h-5 w-5 rounded-full bg-gray-350 dark:bg-[#575757] flex items-center justify-center">
               <GoArrowUpRight className="h-1 w-1" />
             </div>
-          </Button>
+            </Button>
+          </Link>
         </div>
       </div>
     </header>

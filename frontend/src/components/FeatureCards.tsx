@@ -7,12 +7,12 @@ export default function FeatureCards() {
     },
     {
       title: "Free & Unlimited",
-      description: "Create and send as many invoices as you need — no limits, no hidden costs, just seamless billing freedom.",
+      description: "Create and send as many invoices as you need no limits, no hidden costs, just seamless billing freedom.",
       icon: "♾️"
     },
     {
       title: "Safe & Secure",
-      description: "Your data stays yours — we never track, sell, or share it. Store everything locally or securely on our server — the choice is yours.",
+      description: "Your data stays yours we never track, sell, or share it. Store everything locally or securely on our server the choice is yours.",
       icon: "🔒"
     }
   ];
