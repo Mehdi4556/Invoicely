@@ -43,7 +43,7 @@ export default function Header() {
           <Link to="/create-invoice">
             <Button
               variant="ghost"
-              className="text-foreground hover:bg-transparent hover:text-foreground cursor-pointer dark:bg-[#2a2a2a] dark:hover:bg-[#2a2a2a] dark:text-white"
+              className="text-foreground px-3 hover:bg-transparent hover:text-foreground cursor-pointer dark:bg-[#2a2a2a] dark:hover:bg-[#2a2a2a] dark:text-white"
             >
             Invoice It
             <div className="ml-1 h-5 w-5 rounded-full bg-gray-350 dark:bg-[#575757] flex items-center justify-center">
