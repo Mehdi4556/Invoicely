@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Accordion } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { useAssets } from "@/contexts/AssetsContext";
 
 // Import Invoice Section Components
 import CompanyInfoSection from "@/components/invoice/CompanyInfoSection";
@@ -39,9 +40,10 @@ const invoiceSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
   companyLogo: z.string().optional(),
   currency: z.enum(["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "NGN", "PKR"]),
+  theme: z.enum(["modern", "classic", "minimal", "bold"]),
   clientName: z.string().min(1, "Client name is required"),
-  clientEmail: z.string().email("Invalid email address"),
-  clientAddress: z.string().min(1, "Client address is required"),
+  clientEmail: z.union([z.string().email("Invalid email address"), z.literal("")]),
+  clientAddress: z.string(),
   invoiceNumber: z.string().min(1, "Invoice number is required"),
   issueDate: z.date(),
   dueDate: z.date(),
@@ -53,8 +55,15 @@ const invoiceSchema = z.object({
 
 export default function CreateInvoice() {
   const [issueDate, setIssueDate] = useState<Date>(new Date());
-  const [dueDate, setDueDate] = useState<Date>(new Date());
+  const [dueDate, setDueDate] = useState<Date>(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 30);
+    return date;
+  });
   const [logoPreview, setLogoPreview] = useState<string>("");
+  
+  // Get assets from context
+  const { signature, companyLogo: savedCompanyLogo } = useAssets();
 
   const {
     register,
@@ -69,13 +78,18 @@ export default function CreateInvoice() {
       companyName: "INVOICELY",
       companyLogo: "",
       currency: "USD",
+      theme: "modern",
       clientName: "",
       clientEmail: "",
       clientAddress: "",
       invoiceNumber: `INV-${Date.now()}`,
       issueDate: new Date(),
-      dueDate: new Date(),
-      status: undefined,
+      dueDate: (() => {
+        const date = new Date();
+        date.setDate(date.getDate() + 30);
+        return date;
+      })(),
+      status: "Pending",
       items: [{ name: "", quantity: 1, price: 0 }],
       taxRate: 0,
       discountRate: 0,
@@ -89,6 +103,14 @@ export default function CreateInvoice() {
 
   // Watch all form values for live preview
   const watchedValues = watch();
+
+  // Initialize logo from assets context
+  useEffect(() => {
+    if (savedCompanyLogo && !logoPreview) {
+      setLogoPreview(savedCompanyLogo);
+      setValue("companyLogo", savedCompanyLogo);
+    }
+  }, [savedCompanyLogo, logoPreview, setValue]);
 
   // Currency symbols mapping
   const getCurrencySymbol = (currency: string) => {
@@ -209,37 +231,98 @@ export default function CreateInvoice() {
     const doc = new jsPDF();
     const currencySymbol = getCurrencySymbol(watchedValues.currency);
     
+    // Get theme colors for PDF
+    const getThemeColors = (theme: string) => {
+      switch (theme) {
+        case "modern":
+          return {
+            primary: [37, 99, 235] as [number, number, number], // Blue
+            secondary: [219, 234, 254] as [number, number, number], // Light blue
+            headerBg: [239, 246, 255] as [number, number, number], // Very light blue
+          };
+        case "classic":
+          return {
+            primary: [71, 85, 105] as [number, number, number], // Slate
+            secondary: [226, 232, 240] as [number, number, number], // Light slate
+            headerBg: [241, 245, 249] as [number, number, number], // Very light slate
+          };
+        case "minimal":
+          return {
+            primary: [17, 24, 39] as [number, number, number], // Gray
+            secondary: [229, 231, 235] as [number, number, number], // Light gray
+            headerBg: [243, 244, 246] as [number, number, number], // Very light gray
+          };
+        case "bold":
+          return {
+            primary: [147, 51, 234] as [number, number, number], // Purple
+            secondary: [233, 213, 255] as [number, number, number], // Light purple
+            headerBg: [250, 245, 255] as [number, number, number], // Very light purple
+          };
+        default:
+          return {
+            primary: [37, 99, 235] as [number, number, number],
+            secondary: [219, 234, 254] as [number, number, number],
+            headerBg: [239, 246, 255] as [number, number, number],
+          };
+      }
+    };
+    
+    const themeColors = getThemeColors(watchedValues.theme || "modern");
+    
+    // Add colored header background
+    doc.setFillColor(...themeColors.headerBg);
+    doc.rect(0, 0, 210, 30, "F");
+    
     // Add company name/logo
     doc.setFontSize(20);
-    doc.setTextColor(37, 99, 235); // Blue color
+    doc.setTextColor(...themeColors.primary);
     // draw logo if available
     try {
       if (watchedValues.companyLogo) {
         // addImage(imageData, format, x, y, width, height)
-        doc.addImage(watchedValues.companyLogo, "PNG", 20, 10, 18, 18, undefined, "FAST");
+        doc.addImage(watchedValues.companyLogo, "PNG", 20, 8, 18, 18, undefined, "FAST");
       }
     } catch {
       // Ignore image errors
     }
-    doc.text(watchedValues.companyName || "INVOICELY", watchedValues.companyLogo ? 42 : 20, 20);
+    doc.text(watchedValues.companyName || "INVOICELY", watchedValues.companyLogo ? 42 : 20, 18);
     
-    // Add invoice details
+    // Add subtitle
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text("Professional Invoice", watchedValues.companyLogo ? 42 : 20, 24);
+    
+    // Add invoice details with themed styling
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text(`Invoice Number: ${watchedValues.invoiceNumber}`, 20, 35);
-    doc.text(`Issue Date: ${format(issueDate, "MMM dd, yyyy")}`, 20, 42);
-    doc.text(`Due Date: ${format(dueDate, "MMM dd, yyyy")}`, 20, 49);
-    doc.text(`Status: ${watchedValues.status || "Pending"}`, 120, 35);
+    doc.text(`Invoice Number: ${watchedValues.invoiceNumber}`, 20, 40);
+    doc.text(`Issue Date: ${format(issueDate, "MMM dd, yyyy")}`, 20, 47);
+    doc.text(`Due Date: ${format(dueDate, "MMM dd, yyyy")}`, 20, 54);
     
-    // Add client info
-    doc.setFontSize(12);
-    doc.text("Bill To:", 20, 60);
+    // Status badge with theme color
+    const status = watchedValues.status || "Pending";
+    doc.setFillColor(...themeColors.secondary);
+    doc.roundedRect(120, 36, 35, 8, 2, 2, "F");
+    doc.setTextColor(...themeColors.primary);
+    doc.setFontSize(9);
+    doc.text(status, 122, 41);
+    
+    // Add client info with themed header
+    doc.setFontSize(11);
+    doc.setTextColor(...themeColors.primary);
+    doc.text("BILL TO:", 20, 68);
     doc.setFontSize(10);
-    doc.text(watchedValues.clientName || "", 20, 67);
-    doc.text(watchedValues.clientEmail || "", 20, 74);
-    doc.text(watchedValues.clientAddress || "", 20, 81);
+    doc.setTextColor(0, 0, 0);
+    doc.text(watchedValues.clientName || "", 20, 75);
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text(watchedValues.clientEmail || "", 20, 81);
+    const addressLines = (watchedValues.clientAddress || "").split("\n");
+    addressLines.forEach((line, i) => {
+      doc.text(line, 20, 87 + (i * 5));
+    });
     
-    // Add items table
+    // Add items table with theme colors
     const tableData = watchedValues.items.map(item => [
       item.name,
       item.quantity.toString(),
@@ -248,22 +331,67 @@ export default function CreateInvoice() {
     ]);
     
     autoTable(doc, {
-      startY: 95,
+      startY: 105,
       head: [["Item", "Qty", "Price", "Total"]],
       body: tableData,
-      theme: "grid",
-      headStyles: { fillColor: [37, 99, 235] },
+      theme: "striped",
+      headStyles: { 
+        fillColor: themeColors.primary,
+        fontSize: 10,
+        fontStyle: "bold",
+        halign: "left",
+      },
+      bodyStyles: {
+        fontSize: 9,
+      },
+      alternateRowStyles: {
+        fillColor: [250, 250, 250],
+      },
+      columnStyles: {
+        1: { halign: "center" },
+        2: { halign: "right" },
+        3: { halign: "right" },
+      },
     });
     
-    // Add totals
+    // Add totals with theme styling
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
-    doc.text(`Subtotal: ${currencySymbol}${calculateSubtotal().toFixed(2)}`, 140, finalY);
-    doc.text(`Tax (${watchedValues.taxRate}%): ${currencySymbol}${calculateTax().toFixed(2)}`, 140, finalY + 7);
-    doc.text(`Discount (${watchedValues.discountRate}%): -${currencySymbol}${calculateDiscount().toFixed(2)}`, 140, finalY + 14);
+    const finalY = (doc as any).lastAutoTable.finalY + 12;
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Subtotal:`, 130, finalY);
+    doc.text(`${currencySymbol}${calculateSubtotal().toFixed(2)}`, 190, finalY, { align: "right" });
+    doc.text(`Tax (${watchedValues.taxRate}%):`, 130, finalY + 7);
+    doc.text(`${currencySymbol}${calculateTax().toFixed(2)}`, 190, finalY + 7, { align: "right" });
+    doc.text(`Discount (${watchedValues.discountRate}%):`, 130, finalY + 14);
+    doc.setTextColor(220, 38, 38);
+    doc.text(`-${currencySymbol}${calculateDiscount().toFixed(2)}`, 190, finalY + 14, { align: "right" });
+    
+    // Total with theme color box
+    doc.setFillColor(...themeColors.secondary);
+    doc.roundedRect(125, finalY + 20, 65, 12, 2, 2, "F");
     doc.setFontSize(12);
-    doc.setTextColor(37, 99, 235);
-    doc.text(`Total: ${currencySymbol}${calculateTotal().toFixed(2)}`, 140, finalY + 24);
+    doc.setTextColor(...themeColors.primary);
+    doc.text(`Total:`, 130, finalY + 28);
+    doc.setFontSize(14);
+    doc.text(`${currencySymbol}${calculateTotal().toFixed(2)}`, 190, finalY + 28, { align: "right" });
+    
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text("Thank you for your business! Payment is due by the due date specified above.", 105, finalY + 45, { align: "center" });
+    
+    // Add signature if available
+    if (signature) {
+      try {
+        doc.setFontSize(9);
+        doc.setTextColor(0, 0, 0);
+        doc.text("Authorized Signature:", 20, finalY + 60);
+        doc.addImage(signature, "PNG", 20, finalY + 65, 50, 20, undefined, "FAST");
+      } catch {
+        // Ignore signature image errors
+      }
+    }
     
     // Save PDF
     doc.save(`invoice-${watchedValues.invoiceNumber}.pdf`);
@@ -303,9 +431,57 @@ export default function CreateInvoice() {
     }
   };
 
+  // Get theme-specific styles for invoice preview
+  const getThemeStyles = (theme: string) => {
+    switch (theme) {
+      case "modern":
+        return {
+          cardClass: "shadow-sm border-blue-100 dark:border-blue-900/30",
+          headerBg: "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20",
+          accentColor: "text-blue-600 dark:text-blue-400",
+          borderColor: "border-blue-200 dark:border-blue-800/50",
+          tableHeaderBg: "bg-blue-50 dark:bg-blue-950/20",
+        };
+      case "classic":
+        return {
+          cardClass: "shadow-md border-slate-200 dark:border-slate-800/30",
+          headerBg: "bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-900/30 dark:to-slate-800/20",
+          accentColor: "text-slate-700 dark:text-slate-300",
+          borderColor: "border-slate-300 dark:border-slate-700/50",
+          tableHeaderBg: "bg-slate-100 dark:bg-slate-900/20",
+        };
+      case "minimal":
+        return {
+          cardClass: "shadow-sm border-gray-100 dark:border-gray-800/30",
+          headerBg: "bg-gray-50 dark:bg-gray-900/20",
+          accentColor: "text-gray-900 dark:text-gray-100",
+          borderColor: "border-gray-200 dark:border-gray-700/50",
+          tableHeaderBg: "bg-gray-50 dark:bg-gray-900/20",
+        };
+      case "bold":
+        return {
+          cardClass: "shadow-lg border-purple-200 dark:border-purple-900/30",
+          headerBg: "bg-gradient-to-r from-purple-100 via-indigo-100 to-blue-100 dark:from-purple-950/30 dark:via-indigo-950/30 dark:to-blue-950/30",
+          accentColor: "text-purple-600 dark:text-purple-400",
+          borderColor: "border-purple-300 dark:border-purple-700/50",
+          tableHeaderBg: "bg-purple-50 dark:bg-purple-950/20",
+        };
+      default:
+        return {
+          cardClass: "shadow-sm border-blue-100 dark:border-blue-900/30",
+          headerBg: "bg-gradient-to-r from-blue-50 to-blue-100/50",
+          accentColor: "text-blue-600",
+          borderColor: "border-blue-200",
+          tableHeaderBg: "bg-blue-50",
+        };
+    }
+  };
+
+  const themeStyles = getThemeStyles(watchedValues.theme || "modern");
+
   return (
     <div className="p-6 max-w-[1800px] mx-auto font-dm-sans bg-gradient-to-br from-blue-50/30 via-transparent to-purple-50/20 dark:from-transparent dark:via-transparent dark:to-transparent min-h-screen">
-      <h1 className="text-2xl font-bold text-foreground mb-6">Create Invoice</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">CREATE INVOICE</h1>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex flex-col xl:flex-row gap-6">
@@ -370,7 +546,7 @@ export default function CreateInvoice() {
                 {/* Submit Button */}
                 <Button 
                   type="submit" 
-                  className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700 h-10 font-medium"
+                  className="w-full mt-6 h-10"
                 >
                   Generate Invoice
                 </Button>
@@ -380,8 +556,8 @@ export default function CreateInvoice() {
 
           {/* RIGHT SIDE - Live Preview */}
           <div className="w-full xl:w-1/2">
-            <Card className="shadow-sm">
-              <CardHeader className="pb-4 border-b">
+            <Card className={themeStyles.cardClass}>
+              <CardHeader className={cn("pb-4 border-b", themeStyles.headerBg, themeStyles.borderColor)}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     {logoPreview ? (
@@ -394,7 +570,7 @@ export default function CreateInvoice() {
                       </div>
                     )}
                     <div>
-                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
+                      <div className={cn("text-2xl font-bold mb-1", themeStyles.accentColor)}>
                         {watchedValues.companyName || "INVOICELY"}
                       </div>
                       <div className="text-xs text-muted-foreground">Professional Invoice</div>
@@ -405,7 +581,7 @@ export default function CreateInvoice() {
                     size="sm" 
                     type="button" 
                     onClick={downloadPDF}
-                    className="h-8 text-xs border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950"
+                    className="h-8 text-xs"
                   >
                     <Download className="h-3 w-3 mr-1.5" />
                     Download PDF
@@ -473,9 +649,9 @@ export default function CreateInvoice() {
                   <h3 className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">
                     Invoice Items
                   </h3>
-                  <div className="border rounded-md">
+                  <div className={cn("border rounded-md", themeStyles.borderColor)}>
                     <Table className="text-xs">
-                      <TableHeader>
+                      <TableHeader className={themeStyles.tableHeaderBg}>
                         <TableRow>
                           <TableHead className="h-8 py-2 text-xs">Item</TableHead>
                           <TableHead className="text-center h-8 py-2 text-xs">Qty</TableHead>
@@ -526,9 +702,9 @@ export default function CreateInvoice() {
                       -{getCurrencySymbol(watchedValues.currency)}{calculateDiscount().toFixed(2)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-lg font-bold pt-3 mt-3 border-t">
+                  <div className={cn("flex justify-between text-lg font-bold pt-3 mt-3 border-t", themeStyles.borderColor)}>
                     <span>Total Amount:</span>
-                    <span className="text-blue-600 dark:text-blue-400">{getCurrencySymbol(watchedValues.currency)}{calculateTotal().toFixed(2)}</span>
+                    <span className={themeStyles.accentColor}>{getCurrencySymbol(watchedValues.currency)}{calculateTotal().toFixed(2)}</span>
                   </div>
                 </div>
 

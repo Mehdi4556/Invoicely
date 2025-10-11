@@ -41,7 +41,7 @@ export default function ItemsSection({
             type="button"
             variant="outline"
             size="sm"
-            className="h-7 text-xs border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950"
+            className="h-7 text-xs"
             onClick={(e) => {
               e.stopPropagation();
               append({ name: "", quantity: 1, price: 0 });

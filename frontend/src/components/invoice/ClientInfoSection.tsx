@@ -34,7 +34,7 @@ export default function ClientInfoSection({ register, errors }: ClientInfoSectio
 
         <div className="space-y-2">
           <Label htmlFor="clientEmail" className="text-xs font-medium">
-            Client Email
+            Client Email <span className="text-muted-foreground font-normal">(Optional)</span>
           </Label>
           <Input
             id="clientEmail"
@@ -50,7 +50,7 @@ export default function ClientInfoSection({ register, errors }: ClientInfoSectio
 
         <div className="space-y-2">
           <Label htmlFor="clientAddress" className="text-xs font-medium">
-            Billing Address
+            Billing Address <span className="text-muted-foreground font-normal">(Optional)</span>
           </Label>
           <Textarea
             id="clientAddress"

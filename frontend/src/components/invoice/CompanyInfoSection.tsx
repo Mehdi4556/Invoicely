@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import type { InvoiceFormData, CurrencyCode } from "@/types/invoice";
+import type { InvoiceFormData, CurrencyCode, InvoiceTheme } from "@/types/invoice";
 
 interface CompanyInfoSectionProps {
   register: UseFormRegister<InvoiceFormData>;
@@ -78,6 +78,49 @@ export default function CompanyInfoSection({
           </Select>
           {errors.currency && (
             <p className="text-xs text-red-600">{errors.currency.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="theme" className="text-xs font-medium">
+            Invoice Theme
+          </Label>
+          <Select
+            onValueChange={(value) => setValue("theme", value as InvoiceTheme)}
+            defaultValue="modern"
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Select theme" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="modern">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-500 to-blue-600"></div>
+                  <span>Modern - Clean & Professional</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="classic">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-slate-600 to-slate-700"></div>
+                  <span>Classic - Traditional & Formal</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="minimal">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-gray-400 to-gray-500"></div>
+                  <span>Minimal - Simple & Elegant</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="bold">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600"></div>
+                  <span>Bold - Vibrant & Eye-catching</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          {errors.theme && (
+            <p className="text-xs text-red-600">{errors.theme.message}</p>
           )}
         </div>
 

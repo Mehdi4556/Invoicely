@@ -1,20 +1,11 @@
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
 import { GoArrowUpRight } from "react-icons/go";
-import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Header() {
-  const [isDark, setIsDark] = useState(false);
-
-  const toggleTheme = (checked: boolean) => {
-    setIsDark(checked);
-    if (checked) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <header className="bg-background border-b border-border transition-colors">

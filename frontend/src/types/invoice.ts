@@ -6,11 +6,13 @@ export interface InvoiceItem {
 
 export type CurrencyCode = "USD" | "EUR" | "GBP" | "JPY" | "CAD" | "AUD" | "CHF" | "CNY" | "INR" | "NGN" | "PKR";
 export type InvoiceStatus = "Pending" | "Paid" | "Overdue";
+export type InvoiceTheme = "modern" | "classic" | "minimal" | "bold";
 
 export interface InvoiceFormData {
   companyName: string;
   companyLogo?: string;
   currency: CurrencyCode;
+  theme: InvoiceTheme;
   clientName: string;
   clientEmail: string;
   clientAddress: string;
