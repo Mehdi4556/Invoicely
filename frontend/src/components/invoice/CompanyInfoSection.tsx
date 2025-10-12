@@ -43,7 +43,7 @@ export default function CompanyInfoSection({
           <Input
             id="companyName"
             placeholder="Your Company Name"
-            className="h-9 focus-visible:ring-offset-0"
+            className="h-9"
             {...register("companyName")}
           />
           {errors.companyName && ( 

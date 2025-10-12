@@ -67,7 +67,7 @@ export default function ItemsSection({
                   <TableCell className="py-1.5">
                     <Input
                       placeholder="Item name"
-                      className="h-7 text-xs focus-visible:ring-offset-0"
+                      className="h-7 text-xs"
                       {...register(`items.${index}.name`)}
                     />
                   </TableCell>
@@ -75,7 +75,7 @@ export default function ItemsSection({
                     <Input
                       type="number"
                       placeholder="1"
-                      className="h-7 text-xs focus-visible:ring-offset-0"
+                      className="h-7 text-xs"
                       {...register(`items.${index}.quantity`, { valueAsNumber: true })}
                     />
                   </TableCell>
@@ -84,7 +84,7 @@ export default function ItemsSection({
                       type="number"
                       placeholder="0.00"
                       step="0.01"
-                      className="h-7 text-xs focus-visible:ring-offset-0"
+                      className="h-7 text-xs"
                       {...register(`items.${index}.price`, { valueAsNumber: true })}
                     />
                   </TableCell>

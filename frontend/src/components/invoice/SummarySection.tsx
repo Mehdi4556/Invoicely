@@ -39,7 +39,7 @@ export default function SummarySection({
               type="number"
               placeholder="0"
               step="0.01"
-              className="h-9 focus-visible:ring-offset-0"
+              className="h-9"
               {...register("taxRate", { valueAsNumber: true })}
             />
           </div>
@@ -53,7 +53,7 @@ export default function SummarySection({
               type="number"
               placeholder="0"
               step="0.01"
-              className="h-9 focus-visible:ring-offset-0"
+              className="h-9"
               {...register("discountRate", { valueAsNumber: true })}
             />
           </div>

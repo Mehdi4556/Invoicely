@@ -49,7 +49,7 @@ export default function InvoiceDetailsSection({
           <Input
             id="invoiceNumber"
             placeholder="INV-001"
-            className="h-9 focus-visible:ring-offset-0"
+            className="h-9"
             {...register("invoiceNumber")}
           />
           {errors.invoiceNumber && (

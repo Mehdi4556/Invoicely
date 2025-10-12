@@ -24,7 +24,7 @@ export default function ClientInfoSection({ register, errors }: ClientInfoSectio
           <Input
             id="clientName"
             placeholder="John Doe"
-            className="h-9 focus-visible:ring-offset-0"
+            className="h-9"
             {...register("clientName")}
           />
           {errors.clientName && (
@@ -40,7 +40,7 @@ export default function ClientInfoSection({ register, errors }: ClientInfoSectio
             id="clientEmail"
             type="email"
             placeholder="john@example.com"
-            className="h-9 focus-visible:ring-offset-0"
+            className="h-9"
             {...register("clientEmail")}
           />
           {errors.clientEmail && (
@@ -56,7 +56,7 @@ export default function ClientInfoSection({ register, errors }: ClientInfoSectio
             id="clientAddress"
             placeholder="123 Main St, City, State, ZIP"
             rows={2}
-            className="text-sm resize-none focus-visible:ring-offset-0"
+            className="text-sm resize-none"
             {...register("clientAddress")}
           />
           {errors.clientAddress && (
