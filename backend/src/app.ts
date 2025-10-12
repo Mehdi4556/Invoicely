@@ -5,6 +5,8 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import pg from "pg";
 import path from "path";
 import { fileURLToPath } from "url";
 import passport, { initializePassport } from "./config/passport.js";
@@ -37,9 +39,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
+// PostgreSQL session store for serverless compatibility
+const PgStore = connectPgSimple(session);
+const pgPool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+});
+
 // Session configuration (required for Passport)
 app.use(
   session({
+    store: new PgStore({
+      pool: pgPool,
+      tableName: "user_sessions",
+      createTableIfMissing: true,
+    }),
     secret: process.env.SESSION_SECRET || "invoicely-secret-key-change-in-production",
     resave: false,
     saveUninitialized: false,
@@ -47,6 +61,7 @@ app.use(
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
   })
 );

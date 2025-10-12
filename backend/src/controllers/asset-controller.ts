@@ -10,8 +10,13 @@ const __dirname = path.dirname(__filename);
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, "../../uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (error) {
+  console.warn("⚠️ Unable to create uploads directory. File uploads may not work in serverless environments.");
+  console.warn("Consider using a cloud storage service like Vercel Blob, AWS S3, or Cloudflare R2.");
 }
 
 // Configure multer for file uploads
