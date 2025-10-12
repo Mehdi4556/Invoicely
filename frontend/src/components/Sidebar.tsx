@@ -4,7 +4,17 @@ import { cn } from "../lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
 
 interface NavItem {
   name: string;
@@ -36,6 +46,12 @@ const createItems: NavItem[] = [
 export default function Sidebar() {
   const location = useLocation();
   const { user, isAuthenticated, login, logout } = useAuth();
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    setIsLogoutDialogOpen(false);
+  };
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-60 border-r border-border bg-background transition-colors">
@@ -141,15 +157,40 @@ export default function Sidebar() {
                   <span>Synced</span>
                 </div>
               </div>
-              <Button
-                onClick={logout}
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-red-600"
-                title="Sign out"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
+              <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-red-600"
+                    title="Sign out"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Are you sure you want to sign out?</DialogTitle>
+                    <DialogDescription>
+                      You will be logged out of your account and will need to sign in again to access your cloud data.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsLogoutDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleLogout}
+                    >
+                      Sign out
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           ) : (
             <div className="rounded-lg border bg-card p-4 shadow-sm">
