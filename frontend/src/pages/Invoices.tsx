@@ -110,12 +110,12 @@ export default function Invoices() {
     return matchesSearch && matchesStatus && matchesStorage;
   });
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "success" | "warning" | "outline" => {
     switch (status) {
       case "Paid":
-        return "default";
+        return "success";
       case "Pending":
-        return "secondary";
+        return "warning";
       case "Overdue":
         return "destructive";
       default:
