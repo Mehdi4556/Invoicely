@@ -46,7 +46,7 @@ export default function CompanyInfoSection({
             className="h-9 focus-visible:ring-offset-0"
             {...register("companyName")}
           />
-          {errors.companyName && (
+          {errors.companyName && ( 
             <p className="text-xs text-red-600">{errors.companyName.message}</p>
           )}
         </div>

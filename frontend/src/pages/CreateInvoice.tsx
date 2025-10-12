@@ -20,6 +20,7 @@ import {
 import { Accordion } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { useAssets } from "@/contexts/AssetsContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Import Invoice Section Components
 import CompanyInfoSection from "@/components/invoice/CompanyInfoSection";
@@ -64,6 +65,9 @@ export default function CreateInvoice() {
   
   // Get assets from context
   const { signature, companyLogo: savedCompanyLogo } = useAssets();
+  
+  // Get auth state
+  const { isAuthenticated } = useAuth();
 
   const {
     register,
@@ -407,15 +411,42 @@ export default function CreateInvoice() {
   };
 
   const onSubmit = (data: InvoiceFormData) => {
-    console.log("Invoice Data:", {
+    const invoiceData = {
       ...data,
+      issueDate: issueDate.toISOString(),
+      dueDate: dueDate.toISOString(),
       subtotal: calculateSubtotal(),
       tax: calculateTax(),
       discount: calculateDiscount(),
       total: calculateTotal(),
-    });
+      createdAt: new Date().toISOString(),
+    };
+
+    // Save to localStorage
+    const invoiceId = `invoice-${Date.now()}`;
+    try {
+      localStorage.setItem(invoiceId, JSON.stringify(invoiceData));
+      console.log("Invoice saved:", invoiceId);
+      
+      // Also sync to cloud if authenticated
+      if (isAuthenticated) {
+        fetch("http://localhost:5000/api/invoices", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(invoiceData),
+        }).catch((error) => {
+          console.error("Error syncing to cloud:", error);
+        });
+      }
+    } catch (error) {
+      console.error("Error saving invoice:", error);
+    }
+
     downloadPDF();
-    alert("Invoice generated successfully!");
+    alert("Invoice generated and saved successfully!");
   };
 
   const getStatusColor = (status: string | undefined) => {

@@ -14,10 +14,36 @@ router.post("/login", login);
 // 👤 Get current user (protected)
 router.get("/me", authMiddleware, getCurrentUser);
 
-// 🔐 Google OAuth
-router.get("/google", googleAuth);
-router.get("/google/callback", googleAuthCallback);
-router.get("/google/success", authMiddleware, googleAuthSuccess);
+// 👤 Get current user from session (for OAuth)
+router.get("/user", (req, res) => {
+  if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+    const user = req.user as any;
+    res.json({
+      id: user.id,
+      name: user.login,
+      email: user.gmail,
+      picture: user.profilePicture,
+    });
+  } else {
+    res.status(401).json({ error: "Not authenticated" });
+  }
+});
+
+// 🚪 Logout
+router.post("/logout", (req, res) => {
+  req.logout((err) => {
+    if (err) {
+      return res.status(500).json({ error: "Logout failed" });
+    }
+    req.session.destroy((destroyErr) => {
+      if (destroyErr) {
+        return res.status(500).json({ error: "Session destruction failed" });
+      }
+      res.clearCookie("connect.sid");
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+});
 
 export default router;
 

@@ -3,6 +3,7 @@ import { Switch } from "./ui/switch";
 import { GoArrowUpRight } from "react-icons/go";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
+import ProfileMenu from "./ProfileMenu";
 
 export default function Header() {
   const { isDark, toggleTheme } = useTheme();
@@ -42,6 +43,9 @@ export default function Header() {
             </div>
             </Button>
           </Link>
+
+          {/* Profile Menu */}
+          <ProfileMenu />
         </div>
       </div>
     </header>

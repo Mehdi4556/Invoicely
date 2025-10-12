@@ -8,30 +8,30 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 // 🔐 Initiate Google OAuth
 export const googleAuth = passport.authenticate("google", {
   scope: ["profile", "email"],
-  session: false,
 });
 
 // 🔄 Google OAuth Callback
 export const googleAuthCallback = (req: Request, res: Response, next: NextFunction) => {
-  passport.authenticate("google", { session: false }, (err: Error, user: any) => {
+  passport.authenticate("google", (err: Error, user: any) => {
     if (err) {
       console.error("Google Auth Error:", err);
-      return res.redirect(`${FRONTEND_URL}/login?error=auth_failed`);
+      return res.redirect(`${FRONTEND_URL}/?error=auth_failed`);
     }
 
     if (!user) {
-      return res.redirect(`${FRONTEND_URL}/login?error=no_user`);
+      return res.redirect(`${FRONTEND_URL}/?error=no_user`);
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id, gmail: user.gmail },
-      JWT_SECRET,
-      { expiresIn: "30d" }
-    );
+    // Log in the user (establish session)
+    req.login(user, (loginErr) => {
+      if (loginErr) {
+        console.error("Login Error:", loginErr);
+        return res.redirect(`${FRONTEND_URL}/?error=login_failed`);
+      }
 
-    // Redirect to frontend with token
-    res.redirect(`${FRONTEND_URL}/auth/callback?token=${token}`);
+      // Redirect to frontend callback page
+      res.redirect(`${FRONTEND_URL}/auth/callback`);
+    });
   })(req, res, next);
 };
 

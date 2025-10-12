@@ -35,24 +35,21 @@ export default function ItemsSection({
   return (
     <AccordionItem value="items" className="border-b border-border">
       <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline text-foreground">
-        <div className="flex items-center justify-between w-full pr-4">
-          <span>Items</span>
+        <span>Items</span>
+      </AccordionTrigger>
+      <AccordionContent className="space-y-3 pt-3 pb-4">
+        <div className="flex justify-end mb-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="h-7 text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              append({ name: "", quantity: 1, price: 0 });
-            }}
+            onClick={() => append({ name: "", quantity: 1, price: 0 })}
           >
             <Plus className="h-3 w-3 mr-1" />
             Add Item
           </Button>
         </div>
-      </AccordionTrigger>
-      <AccordionContent className="space-y-3 pt-3 pb-4">
         <div className="border rounded-md">
           <Table className="text-xs">
             <TableHeader>
