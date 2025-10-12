@@ -1,13 +1,16 @@
 import SignatureCanvas from "@/components/assets/SignatureCanvas";
 import LogoUploader from "@/components/assets/LogoUploader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Info } from "lucide-react";
+import { FileText, Info, Package } from "lucide-react";
 
 export default function Assets() {
   return (
     <div className="p-6 max-w-[1400px] mx-auto font-dm-sans">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground mb-2">ASSETS</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+          <Package className="h-6 w-6" />
+          ASSETS
+        </h1>
         <p className="text-sm text-muted-foreground">
           Manage your company logo and signature for invoices
         </p>

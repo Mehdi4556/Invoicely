@@ -3,7 +3,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { Download, Image as ImageIcon } from "lucide-react";
+import { Download, Image as ImageIcon, Plus } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -512,7 +512,10 @@ export default function CreateInvoice() {
 
   return (
     <div className="p-6 max-w-[1800px] mx-auto font-dm-sans bg-gradient-to-br from-blue-50/30 via-transparent to-purple-50/20 dark:from-transparent dark:via-transparent dark:to-transparent min-h-screen">
-      <h1 className="text-2xl font-bold text-foreground mb-6">CREATE INVOICE</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
+        <Plus className="h-6 w-6" />
+        CREATE INVOICE
+      </h1>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex flex-col xl:flex-row gap-6">

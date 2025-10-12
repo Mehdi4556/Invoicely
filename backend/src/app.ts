@@ -17,6 +17,8 @@ import authRoutes from "./routes/auth-route.js";
 import googleAuthRoutes from "./routes/google-auth-route.js";
 import invoiceRoutes from "./routes/invoice-routes.js";
 import assetRoutes from "./routes/asset-routes.js";
+import { sessionAuthMiddleware } from "./middlewares/session-auth-middleware.js";
+import { getInvoices } from "./controllers/invoice-controller.js";
 
 // Import middlewares
 import { errorMiddleware } from "./middlewares/error-middleware.js";
@@ -63,6 +65,10 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/google-auth", googleAuthRoutes);
+
+// Session-based invoice route for Google Auth users (must come before JWT routes)
+app.get("/api/invoices", sessionAuthMiddleware, getInvoices);
+
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/assets", assetRoutes);
 

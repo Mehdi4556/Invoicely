@@ -7,6 +7,7 @@ import {
   deleteInvoice,
 } from "../controllers/invoice-controller.js";
 import { authMiddleware } from "../middlewares/auth-middleware.js";
+import { sessionAuthMiddleware } from "../middlewares/session-auth-middleware.js";
 
 const router = express.Router();
 
