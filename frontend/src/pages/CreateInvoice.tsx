@@ -3,9 +3,10 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { Download, Image as ImageIcon, Plus } from "lucide-react";
+import { Download, Image as ImageIcon, Plus, Pencil } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useParams, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +56,10 @@ const invoiceSchema = z.object({
 });
 
 export default function CreateInvoice() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const isEditMode = !!id;
+  
   const [issueDate, setIssueDate] = useState<Date>(new Date());
   const [dueDate, setDueDate] = useState<Date>(() => {
     const date = new Date();
@@ -62,6 +67,7 @@ export default function CreateInvoice() {
     return date;
   });
   const [logoPreview, setLogoPreview] = useState<string>("");
+  const [isLoadingInvoice, setIsLoadingInvoice] = useState(false);
   
   // Get assets from context
   const { signature, companyLogo: savedCompanyLogo } = useAssets();
@@ -108,13 +114,113 @@ export default function CreateInvoice() {
   // Watch all form values for live preview
   const watchedValues = watch();
 
+  // Load invoice data if in edit mode
+  useEffect(() => {
+    const loadInvoiceData = async () => {
+      if (!isEditMode || !id) return;
+
+      setIsLoadingInvoice(true);
+      try {
+        // Check if it's a local invoice
+        if (id.startsWith("invoice-")) {
+          const data = localStorage.getItem(id);
+          if (data) {
+            const parsed = JSON.parse(data);
+            
+            // Set form values
+            setValue("companyName", parsed.companyName || "");
+            setValue("companyLogo", parsed.companyLogo || "");
+            setValue("currency", parsed.currency || "USD");
+            setValue("theme", parsed.theme || "modern");
+            setValue("clientName", parsed.clientName || "");
+            setValue("clientEmail", parsed.clientEmail || "");
+            setValue("clientAddress", parsed.clientAddress || "");
+            setValue("invoiceNumber", parsed.invoiceNumber || "");
+            setValue("status", parsed.status || "Pending");
+            setValue("taxRate", parsed.taxRate || 0);
+            setValue("discountRate", parsed.discountRate || 0);
+            
+            // Set items
+            if (parsed.items && parsed.items.length > 0) {
+              setValue("items", parsed.items);
+            }
+            
+            // Set dates
+            if (parsed.issueDate) {
+              setIssueDate(new Date(parsed.issueDate));
+              setValue("issueDate", new Date(parsed.issueDate));
+            }
+            if (parsed.dueDate) {
+              setDueDate(new Date(parsed.dueDate));
+              setValue("dueDate", new Date(parsed.dueDate));
+            }
+            
+            // Set logo preview
+            if (parsed.companyLogo) {
+              setLogoPreview(parsed.companyLogo);
+            }
+          }
+        } else if (isAuthenticated) {
+          // Load from cloud
+          const response = await fetch(`http://localhost:5000/api/invoices/${id}`, {
+            credentials: "include",
+          });
+          
+          if (response.ok) {
+            const { invoice } = await response.json();
+            
+            // Map cloud invoice data to form
+            setValue("companyName", invoice.companyName || "");
+            setValue("companyLogo", invoice.companyLogo || "");
+            setValue("currency", invoice.currency || "USD");
+            setValue("theme", invoice.theme || "modern");
+            setValue("clientName", invoice.clientName || "");
+            setValue("clientEmail", invoice.clientEmail || "");
+            setValue("clientAddress", invoice.clientAddress || "");
+            setValue("invoiceNumber", invoice.invoicePrefix + invoice.serialNumber || "");
+            setValue("taxRate", 0);
+            setValue("discountRate", 0);
+            
+            // Map items from cloud format
+            if (invoice.items && invoice.items.length > 0) {
+              const formattedItems = invoice.items.map((item: { itemName?: string; quantity?: number; price?: string | number }) => ({
+                name: item.itemName || "",
+                quantity: item.quantity || 1,
+                price: parseFloat(String(item.price)) || 0,
+              }));
+              setValue("items", formattedItems);
+            }
+            
+            // Set dates
+            if (invoice.invoiceDate) {
+              setIssueDate(new Date(invoice.invoiceDate));
+              setValue("issueDate", new Date(invoice.invoiceDate));
+            }
+            
+            // Set logo preview
+            if (invoice.companyLogo) {
+              setLogoPreview(invoice.companyLogo);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading invoice:", error);
+        alert("Failed to load invoice data");
+      } finally {
+        setIsLoadingInvoice(false);
+      }
+    };
+
+    loadInvoiceData();
+  }, [isEditMode, id, isAuthenticated, setValue]);
+
   // Initialize logo from assets context
   useEffect(() => {
-    if (savedCompanyLogo && !logoPreview) {
+    if (savedCompanyLogo && !logoPreview && !isEditMode) {
       setLogoPreview(savedCompanyLogo);
       setValue("companyLogo", savedCompanyLogo);
     }
-  }, [savedCompanyLogo, logoPreview, setValue]);
+  }, [savedCompanyLogo, logoPreview, setValue, isEditMode]);
 
   // Currency symbols mapping
   const getCurrencySymbol = (currency: string) => {
@@ -172,8 +278,10 @@ export default function CreateInvoice() {
     }
   };
 
-  // Persist and restore draft from localStorage
+  // Persist and restore draft from localStorage (only in create mode)
   useEffect(() => {
+    if (isEditMode) return; // Skip draft restoration in edit mode
+    
     const saved = localStorage.getItem("create-invoice-draft");
     if (saved) {
       try {
@@ -204,9 +312,11 @@ export default function CreateInvoice() {
         // Ignore parse errors
       }
     }
-  }, [setValue]);
+  }, [setValue, isEditMode]);
 
   useEffect(() => {
+    if (isEditMode) return; // Skip draft saving in edit mode
+    
     const subscription = watch((data) => {
       try {
         localStorage.setItem("create-invoice-draft", JSON.stringify(data));
@@ -215,7 +325,7 @@ export default function CreateInvoice() {
       }
     });
     return () => subscription.unsubscribe();
-  }, [watch]);
+  }, [watch, isEditMode]);
 
   const removeLogo = () => {
     setLogoPreview("");
@@ -410,7 +520,7 @@ export default function CreateInvoice() {
     }
   };
 
-  const onSubmit = (data: InvoiceFormData) => {
+  const onSubmit = async (data: InvoiceFormData) => {
     const invoiceData = {
       ...data,
       issueDate: issueDate.toISOString(),
@@ -422,31 +532,63 @@ export default function CreateInvoice() {
       createdAt: new Date().toISOString(),
     };
 
-    // Save to localStorage
-    const invoiceId = `invoice-${Date.now()}`;
     try {
-      localStorage.setItem(invoiceId, JSON.stringify(invoiceData));
-      console.log("Invoice saved:", invoiceId);
-      
-      // Also sync to cloud if authenticated
-      if (isAuthenticated) {
-        fetch("http://localhost:5000/api/invoices", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(invoiceData),
-        }).catch((error) => {
-          console.error("Error syncing to cloud:", error);
-        });
+      if (isEditMode && id) {
+        // Update existing invoice
+        if (id.startsWith("invoice-")) {
+          // Update in localStorage
+          localStorage.setItem(id, JSON.stringify(invoiceData));
+          console.log("Invoice updated:", id);
+          
+          alert("Invoice updated successfully!");
+          navigate("/invoices");
+        } else if (isAuthenticated) {
+          // Update in cloud
+          const response = await fetch(`http://localhost:5000/api/invoices/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify(invoiceData),
+          });
+          
+          if (response.ok) {
+            alert("Invoice updated successfully!");
+            navigate("/invoices");
+          } else {
+            alert("Failed to update invoice");
+          }
+        }
+      } else {
+        // Create new invoice
+        const invoiceId = `invoice-${Date.now()}`;
+        
+        // Save to localStorage
+        localStorage.setItem(invoiceId, JSON.stringify(invoiceData));
+        console.log("Invoice saved:", invoiceId);
+        
+        // Also sync to cloud if authenticated
+        if (isAuthenticated) {
+          fetch("http://localhost:5000/api/invoices", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify(invoiceData),
+          }).catch((error) => {
+            console.error("Error syncing to cloud:", error);
+          });
+        }
+        
+        downloadPDF();
+        alert("Invoice generated and saved successfully!");
       }
     } catch (error) {
       console.error("Error saving invoice:", error);
+      alert("Failed to save invoice");
     }
-
-    downloadPDF();
-    alert("Invoice generated and saved successfully!");
   };
 
   const getStatusColor = (status: string | undefined) => {
@@ -510,11 +652,33 @@ export default function CreateInvoice() {
 
   const themeStyles = getThemeStyles(watchedValues.theme || "modern");
 
+  if (isLoadingInvoice) {
+    return (
+      <div className="p-6 max-w-[1800px] mx-auto font-dm-sans bg-gradient-to-br from-blue-50/30 via-transparent to-purple-50/20 dark:from-transparent dark:via-transparent dark:to-transparent min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading invoice...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-[1800px] mx-auto font-dm-sans bg-gradient-to-br from-blue-50/30 via-transparent to-purple-50/20 dark:from-transparent dark:via-transparent dark:to-transparent min-h-screen">
       <h1 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-        <Plus className="h-6 w-6" />
-        CREATE INVOICE
+        {isEditMode ? (
+          <>
+            <Pencil className="h-6 w-6" />
+            EDIT INVOICE
+          </>
+        ) : (
+          <>
+            <Plus className="h-6 w-6" />
+            CREATE INVOICE
+          </>
+        )}
       </h1>
 
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -582,7 +746,7 @@ export default function CreateInvoice() {
                   type="submit" 
                   className="w-full mt-6 h-10"
                 >
-                  Generate Invoice
+                  {isEditMode ? "Update Invoice" : "Generate Invoice"}
                 </Button>
               </CardContent>
             </Card>

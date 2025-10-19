@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { FileText, Search, Filter, Eye, Download, Trash2,} from "lucide-react";
-// import { Link } from "react-router-dom";
+import { FileText, Search, Filter, Eye, Download, Trash2, Pencil } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -43,6 +43,7 @@ interface Invoice {
 
 export default function Invoices() {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -284,6 +285,7 @@ export default function Invoices() {
                           <Skeleton className="h-8 w-8 rounded" />
                           <Skeleton className="h-8 w-8 rounded" />
                           <Skeleton className="h-8 w-8 rounded" />
+                          <Skeleton className="h-8 w-8 rounded" />
                         </div>
                       </TableCell>
                     </TableRow>
@@ -325,6 +327,14 @@ export default function Invoices() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon-sm" 
+                            title="Edit Invoice"
+                            onClick={() => navigate(`/edit-invoice/${invoice.id}`)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon-sm" title="View Invoice">
                             <Eye className="h-4 w-4" />
                           </Button>

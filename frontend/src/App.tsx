@@ -21,6 +21,7 @@ function App() {
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route element={<Layout />}>
                 <Route path="/create-invoice" element={<CreateInvoice />} />
+                <Route path="/edit-invoice/:id" element={<CreateInvoice />} />
                 <Route path="/invoices" element={<Invoices />} />
                 <Route path="/assets" element={<Assets />} />
               </Route>
