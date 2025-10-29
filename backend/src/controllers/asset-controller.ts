@@ -15,8 +15,12 @@ try {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
 } catch (error) {
-  console.warn("⚠️ Unable to create uploads directory. File uploads may not work in serverless environments.");
-  console.warn("Consider using a cloud storage service like Vercel Blob, AWS S3, or Cloudflare R2.");
+  console.warn(
+    "⚠️ Unable to create uploads directory. File uploads may not work in serverless environments."
+  );
+  console.warn(
+    "Consider using a cloud storage service like Vercel Blob, AWS S3, or Cloudflare R2."
+  );
 }
 
 // Configure multer for file uploads
@@ -30,7 +34,11 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (
+  req: any,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
   // Accept images only
   if (file.mimetype.startsWith("image/")) {
     cb(null, true);
@@ -87,4 +95,3 @@ export const deleteAsset = asyncHandler(async (req: Request, res: Response) => {
     message: "File deleted successfully",
   });
 });
-

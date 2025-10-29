@@ -7,7 +7,8 @@ import { users } from "../db/schema.js";
 import { signupSchema, loginSchema } from "../types/index.js";
 import { eq } from "drizzle-orm";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
+const JWT_SECRET =
+  process.env.JWT_SECRET || "your-secret-key-change-in-production";
 
 // 📝 Signup
 export const signup = asyncHandler(async (req: Request, res: Response) => {
@@ -89,27 +90,28 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   // Check if user has a password (not a Google-only user)
   if (!user.password) {
-    res.status(401).json({ 
+    res.status(401).json({
       error: "This account uses Google Sign-In. Please login with Google.",
-      useGoogle: true
+      useGoogle: true,
     });
     return;
   }
 
   // Verify password
-  const isValidPassword = await bcrypt.compare(validatedData.password, user.password);
-  
+  const isValidPassword = await bcrypt.compare(
+    validatedData.password,
+    user.password
+  );
+
   if (!isValidPassword) {
     res.status(401).json({ error: "Invalid credentials" });
     return;
   }
 
   // Generate JWT token
-  const token = jwt.sign(
-    { userId: user.id, gmail: user.gmail },
-    JWT_SECRET,
-    { expiresIn: "30d" }
-  );
+  const token = jwt.sign({ userId: user.id, gmail: user.gmail }, JWT_SECRET, {
+    expiresIn: "30d",
+  });
 
   res.json({
     message: "Login successful",
@@ -123,27 +125,28 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 });
 
 // 👤 Get current user
-export const getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
-  const userId = (req as any).userId;
+export const getCurrentUser = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = (req as any).userId;
 
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
 
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
-    return;
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({
+      user: {
+        id: user.id,
+        login: user.login,
+        gmail: user.gmail,
+        createdAt: user.createdAt,
+      },
+    });
   }
-
-  res.json({
-    user: {
-      id: user.id,
-      login: user.login,
-      gmail: user.gmail,
-      createdAt: user.createdAt,
-    },
-  });
-});
-
+);

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Trash2, Image as ImageIcon } from "lucide-react";
-import { useAssets } from "@/contexts/AssetsContext";
+import { useAssets } from "@/hooks/useAssets";
 
 export default function LogoUploader() {
   const { companyLogo, setCompanyLogo, clearLogo } = useAssets();

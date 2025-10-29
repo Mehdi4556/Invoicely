@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Accordion } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
-import { useAssets } from "@/contexts/AssetsContext";
+import { useAssets } from "@/hooks/useAssets";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Import Invoice Section Components

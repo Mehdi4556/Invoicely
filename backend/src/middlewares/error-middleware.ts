@@ -26,4 +26,3 @@ export const errorMiddleware = (
     error: err.message || "Something went wrong!",
   });
 };
-

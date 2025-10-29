@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, Save, PenTool } from "lucide-react";
-import { useAssets } from "@/contexts/AssetsContext";
+import { useAssets } from "@/hooks/useAssets";
 
 export default function SignatureCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);

@@ -1,14 +1,19 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
+const JWT_SECRET =
+  process.env.JWT_SECRET || "your-secret-key-change-in-production";
 
 interface JwtPayload {
   userId: number;
   gmail: string;
 }
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const authMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
@@ -40,4 +45,3 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     res.status(500).json({ error: "Authentication failed" });
   }
 };
-

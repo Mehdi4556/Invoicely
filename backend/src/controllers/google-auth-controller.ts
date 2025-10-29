@@ -2,7 +2,8 @@ import type { Request, Response, NextFunction } from "express";
 import passport from "../config/passport.js";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
+const JWT_SECRET =
+  process.env.JWT_SECRET || "your-secret-key-change-in-production";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // 🔐 Initiate Google OAuth
@@ -11,7 +12,11 @@ export const googleAuth = passport.authenticate("google", {
 });
 
 // 🔄 Google OAuth Callback
-export const googleAuthCallback = (req: Request, res: Response, next: NextFunction) => {
+export const googleAuthCallback = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   passport.authenticate("google", (err: Error, user: any) => {
     if (err) {
       console.error("Google Auth Error:", err);
@@ -42,4 +47,3 @@ export const googleAuthSuccess = (req: Request, res: Response) => {
     user: req.user,
   });
 };
-

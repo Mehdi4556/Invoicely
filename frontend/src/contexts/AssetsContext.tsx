@@ -1,15 +1,7 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
+import { AssetsContext } from "./assets-context.types";
 
-interface AssetsContextType {
-  signature: string;
-  setSignature: (signature: string) => void;
-  companyLogo: string;
-  setCompanyLogo: (logo: string) => void;
-  clearSignature: () => void;
-  clearLogo: () => void;
-}
-
-const AssetsContext = createContext<AssetsContextType | undefined>(undefined);
+export { AssetsContext };
 
 export function AssetsProvider({ children }: { children: ReactNode }) {
   const [signature, setSignatureState] = useState<string>(() => {
@@ -71,12 +63,3 @@ export function AssetsProvider({ children }: { children: ReactNode }) {
     </AssetsContext.Provider>
   );
 }
-
-export function useAssets() {
-  const context = useContext(AssetsContext);
-  if (context === undefined) {
-    throw new Error("useAssets must be used within an AssetsProvider");
-  }
-  return context;
-}
-
