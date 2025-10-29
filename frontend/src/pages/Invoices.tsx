@@ -54,15 +54,8 @@ export default function Invoices() {
     loadInvoices();
   }, [isAuthenticated]);
 
-  // Skeleton loading effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
   const loadInvoices = async () => {
+    setIsLoading(true);
     // Load local invoices from localStorage
     const localInvoices: Invoice[] = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -102,6 +95,7 @@ export default function Invoices() {
             ...localInvoices,
             ...cloudInvoices.map((inv: Invoice) => ({ ...inv, storage: "cloud" })),
           ]);
+          setIsLoading(false);
           return;
         }
       } catch (error) {
@@ -110,6 +104,7 @@ export default function Invoices() {
     }
 
     setInvoices(localInvoices);
+    setIsLoading(false);
   };
 
   const filteredInvoices = invoices.filter((invoice) => {
