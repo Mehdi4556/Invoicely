@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { FileText, Search, Filter, Eye, Download, Trash2, Pencil } from "lucide-react";
+import {
+  FileText,
+  Search,
+  Filter,
+  Eye,
+  Download,
+  Trash2,
+  Pencil,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Table,
@@ -10,6 +18,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "react-toastify";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +67,7 @@ export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [storageFilter, setStorageFilter] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<Invoice | null>(null);
 
   useEffect(() => {
     loadInvoices();
@@ -93,7 +112,10 @@ export default function Invoices() {
           const cloudInvoices = await response.json();
           setInvoices([
             ...localInvoices,
-            ...cloudInvoices.map((inv: Invoice) => ({ ...inv, storage: "cloud" })),
+            ...cloudInvoices.map((inv: Invoice) => ({
+              ...inv,
+              storage: "cloud",
+            })),
           ]);
           setIsLoading(false);
           return;
@@ -111,12 +133,58 @@ export default function Invoices() {
     const matchesSearch =
       invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
-    const matchesStorage = storageFilter === "all" || invoice.storage === storageFilter;
+    const matchesStatus =
+      statusFilter === "all" || invoice.status === statusFilter;
+    const matchesStorage =
+      storageFilter === "all" || invoice.storage === storageFilter;
     return matchesSearch && matchesStatus && matchesStorage;
   });
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "success" | "warning" | "outline" => {
+  const confirmDelete = (invoice: Invoice) => {
+    setDeleteTarget(invoice); // open the popup for this invoice
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+
+    try {
+      if (deleteTarget.storage === "local") {
+        // Delete local invoice
+        localStorage.removeItem(deleteTarget.id);
+        setInvoices((prev) => prev.filter((inv) => inv.id !== deleteTarget.id));
+      } else {
+        // Delete cloud invoice
+        const response = await fetch(
+          `http://localhost:5000/api/invoices/${deleteTarget.id}`,
+          {
+            method: "DELETE",
+            credentials: "include",
+          }
+        );
+
+        if (!response.ok) throw new Error("Failed to delete from server");
+
+        setInvoices((prev) => prev.filter((inv) => inv.id !== deleteTarget.id));
+      }
+
+      toast.success(`Invoice ${deleteTarget.invoiceNumber} has been successfully deleted.`);
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      toast.error("Something went wrong while deleting the invoice.");
+    } finally {
+      setDeleteTarget(null); // close popup
+    }
+  };
+
+  const getStatusVariant = (
+    status: string
+  ):
+    | "default"
+    | "secondary"
+    | "destructive"
+    | "success"
+    | "warning"
+    | "outline" => {
     switch (status) {
       case "Paid":
         return "success";
@@ -202,7 +270,10 @@ export default function Invoices() {
                   {/* Status Filter */}
                   <div className="space-y-2">
                     <label className="text-xs font-medium">Status</label>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <Select
+                      value={statusFilter}
+                      onValueChange={setStatusFilter}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="All statuses" />
                       </SelectTrigger>
@@ -218,7 +289,10 @@ export default function Invoices() {
                   {/* Storage Filter */}
                   <div className="space-y-2">
                     <label className="text-xs font-medium">Storage</label>
-                    <Select value={storageFilter} onValueChange={setStorageFilter}>
+                    <Select
+                      value={storageFilter}
+                      onValueChange={setStorageFilter}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="All storage" />
                       </SelectTrigger>
@@ -246,7 +320,9 @@ export default function Invoices() {
                   <TableHead className="font-semibold">Issue Date</TableHead>
                   <TableHead className="font-semibold">Due Date</TableHead>
                   <TableHead className="font-semibold">Storage</TableHead>
-                  <TableHead className="font-semibold text-right">Actions</TableHead>
+                  <TableHead className="font-semibold text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -287,7 +363,10 @@ export default function Invoices() {
                   ))
                 ) : filteredInvoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={8}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                       <p className="font-medium">No invoices found</p>
                       <p className="text-sm">
@@ -300,14 +379,18 @@ export default function Invoices() {
                 ) : (
                   filteredInvoices.map((invoice) => (
                     <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                      <TableCell className="font-medium">
+                        {invoice.invoiceNumber}
+                      </TableCell>
                       <TableCell>{invoice.clientName}</TableCell>
                       <TableCell className="font-medium">
                         {getCurrencySymbol(invoice.currency)}
                         {invoice.totalAmount.toFixed(2)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getStatusVariant(invoice.status)}>{invoice.status}</Badge>
+                        <Badge variant={getStatusVariant(invoice.status)}>
+                          {invoice.status}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(invoice.issueDate).toLocaleDateString()}
@@ -316,27 +399,50 @@ export default function Invoices() {
                         {new Date(invoice.dueDate).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={invoice.storage === "cloud" ? "default" : "outline"} className="text-xs">
-                          {invoice.storage === "cloud" ? "☁️ Cloud" : "💾 Local"}
+                        <Badge
+                          variant={
+                            invoice.storage === "cloud" ? "default" : "outline"
+                          }
+                          className="text-xs"
+                        >
+                          {invoice.storage === "cloud"
+                            ? "☁️ Cloud"
+                            : "💾 Local"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon-sm" 
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
                             title="Edit Invoice"
-                            onClick={() => navigate(`/edit-invoice/${invoice.id}`)}
+                            onClick={() =>
+                              navigate(`/edit-invoice/${invoice.id}`)
+                            }
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon-sm" title="View Invoice">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            title="View Invoice"
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon-sm" title="Download PDF">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            title="Download PDF"
+                          >
                             <Download className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon-sm" className="text-red-600 hover:text-red-700" title="Delete">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-red-600 hover:text-red-700"
+                            title="Delete"
+                            onClick={() => confirmDelete(invoice)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -348,11 +454,36 @@ export default function Invoices() {
             </Table>
           </div>
 
+          <Dialog
+            open={!!deleteTarget}
+            onOpenChange={() => setDeleteTarget(null)}
+          >
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Are you sure you want to delete?</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  This action cannot be undone. The invoice will be permanently
+                  removed.
+                </p>
+              </DialogHeader>
+
+              <DialogFooter className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteConfirm}>
+                  Delete
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {/* Stats */}
           {invoices.length > 0 && (
             <div className="flex items-center justify-between text-sm text-muted-foreground pt-2">
               <p>
-                Showing {filteredInvoices.length} of {invoices.length} invoice(s)
+                Showing {filteredInvoices.length} of {invoices.length}{" "}
+                invoice(s)
               </p>
               <p>
                 {invoices.filter((i) => i.storage === "local").length} local •{" "}
