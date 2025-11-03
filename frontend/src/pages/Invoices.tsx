@@ -135,7 +135,9 @@ export default function Invoices() {
           credentials: "include",
         });
         if (response.ok) {
-          const cloudInvoices = await response.json();
+          const data = await response.json();
+          // API returns { invoices: [...] } format
+          const cloudInvoices = Array.isArray(data) ? data : (data.invoices || []);
           setInvoices([
             ...localInvoices,
             ...cloudInvoices.map((inv: Invoice) => ({
