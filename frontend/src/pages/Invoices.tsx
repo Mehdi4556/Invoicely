@@ -19,6 +19,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "react-toastify";
+import { format } from "date-fns";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { useAssets } from "@/hooks/useAssets";
+import type { InvoiceItem } from "@/types/invoice";
 
 import {
   Dialog,
@@ -27,6 +32,25 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+
+interface InvoiceData {
+  companyName?: string;
+  companyLogo?: string;
+  currency?: string;
+  theme?: string;
+  clientName?: string;
+  clientEmail?: string;
+  clientAddress?: string;
+  invoiceNumber?: string;
+  issueDate?: string | Date;
+  dueDate?: string | Date;
+  status?: string;
+  items?: InvoiceItem[];
+  taxRate?: number;
+  discountRate?: number;
+  subtotal?: number;
+  totalAmount?: number;
+}
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,6 +85,7 @@ interface Invoice {
 
 export default function Invoices() {
   const { isAuthenticated } = useAuth();
+  const { signature } = useAssets();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -71,6 +96,7 @@ export default function Invoices() {
 
   useEffect(() => {
     loadInvoices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   const loadInvoices = async () => {
@@ -173,6 +199,315 @@ export default function Invoices() {
       toast.error("Something went wrong while deleting the invoice.");
     } finally {
       setDeleteTarget(null); // close popup
+    }
+  };
+
+  //Download PDF
+  const downloadPDF = async (invoiceId: string) => {
+    try {
+      // Find invoice in the current list
+      const invoice = invoices.find((inv) => inv.id === invoiceId);
+      if (!invoice) {
+        toast.error("Invoice not found");
+        return;
+      }
+
+      // Load full invoice data
+      let invoiceData: InvoiceData | null = null;
+      if (invoice.storage === "local") {
+        const data = localStorage.getItem(invoiceId);
+        if (data) {
+          invoiceData = JSON.parse(data);
+        }
+      } else {
+        // Load from API
+        const response = await fetch(
+          `http://localhost:5000/api/invoices/${invoiceId}`,
+          {
+            credentials: "include",
+          }
+        );
+        if (response.ok) {
+          invoiceData = await response.json();
+        }
+      }
+
+      if (!invoiceData) {
+        toast.error("Could not load invoice data");
+        return;
+      }
+
+      const doc = new jsPDF();
+      const currencySymbol = getCurrencySymbol(invoiceData.currency || invoice.currency);
+
+      // Get theme colors for PDF
+      const getThemeColors = (theme: string) => {
+        switch (theme) {
+          case "modern":
+            return {
+              primary: [37, 99, 235] as [number, number, number], // Blue
+              secondary: [219, 234, 254] as [number, number, number], // Light blue
+              headerBg: [239, 246, 255] as [number, number, number], // Very light blue
+            };
+          case "classic":
+            return {
+              primary: [71, 85, 105] as [number, number, number], // Slate
+              secondary: [226, 232, 240] as [number, number, number], // Light slate
+              headerBg: [241, 245, 249] as [number, number, number], // Very light slate
+            };
+          case "minimal":
+            return {
+              primary: [17, 24, 39] as [number, number, number], // Gray
+              secondary: [229, 231, 235] as [number, number, number], // Light gray
+              headerBg: [243, 244, 246] as [number, number, number], // Very light gray
+            };
+          case "bold":
+            return {
+              primary: [147, 51, 234] as [number, number, number], // Purple
+              secondary: [233, 213, 255] as [number, number, number], // Light purple
+              headerBg: [250, 245, 255] as [number, number, number], // Very light purple
+            };
+          default:
+            return {
+              primary: [37, 99, 235] as [number, number, number],
+              secondary: [219, 234, 254] as [number, number, number],
+              headerBg: [239, 246, 255] as [number, number, number],
+            };
+        }
+      };
+
+      const themeColors = getThemeColors(invoiceData.theme || "modern");
+
+      // Calculate totals
+      const calculateSubtotal = () => {
+        if (!invoiceData.items || !Array.isArray(invoiceData.items)) {
+          return invoiceData.subtotal || invoiceData.totalAmount || 0;
+        }
+        return invoiceData.items.reduce((sum: number, item: InvoiceItem) => {
+          const quantity = Number(item.quantity) || 0;
+          const price = Number(item.price) || 0;
+          return sum + quantity * price;
+        }, 0);
+      };
+
+      const calculateTax = () => {
+        const subtotal = calculateSubtotal();
+        const taxRate = Number(invoiceData.taxRate) || 0;
+        return (subtotal * taxRate) / 100;
+      };
+
+      const calculateDiscount = () => {
+        const subtotal = calculateSubtotal();
+        const discountRate = Number(invoiceData.discountRate) || 0;
+        return (subtotal * discountRate) / 100;
+      };
+
+      const calculateTotal = () => {
+        return calculateSubtotal() + calculateTax() - calculateDiscount();
+      };
+
+      // Add colored header background
+      doc.setFillColor(...themeColors.headerBg);
+      doc.rect(0, 0, 210, 30, "F");
+
+      // Add company name/logo
+      doc.setFontSize(20);
+      doc.setTextColor(...themeColors.primary);
+      // draw logo if available
+      try {
+        if (invoiceData.companyLogo) {
+          // addImage(imageData, format, x, y, width, height)
+          doc.addImage(
+            invoiceData.companyLogo,
+            "PNG",
+            20,
+            8,
+            18,
+            18,
+            undefined,
+            "FAST"
+          );
+        }
+      } catch {
+        // Ignore image errors
+      }
+      doc.text(
+        invoiceData.companyName || "INVOICELY",
+        invoiceData.companyLogo ? 42 : 20,
+        18
+      );
+
+      // Add subtitle
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text(
+        "Professional Invoice",
+        invoiceData.companyLogo ? 42 : 20,
+        24
+      );
+
+      // Add invoice details with themed styling
+      const issueDate = invoiceData.issueDate
+        ? new Date(invoiceData.issueDate)
+        : new Date(invoice.issueDate);
+      const dueDate = invoiceData.dueDate
+        ? new Date(invoiceData.dueDate)
+        : new Date(invoice.dueDate);
+
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(
+        `Invoice Number: ${invoiceData.invoiceNumber || invoice.invoiceNumber}`,
+        20,
+        40
+      );
+      doc.text(`Issue Date: ${format(issueDate, "MMM dd, yyyy")}`, 20, 47);
+      doc.text(`Due Date: ${format(dueDate, "MMM dd, yyyy")}`, 20, 54);
+
+      // Status badge with theme color
+      const status = invoiceData.status || invoice.status || "Pending";
+      doc.setFillColor(...themeColors.secondary);
+      doc.roundedRect(120, 36, 35, 8, 2, 2, "F");
+      doc.setTextColor(...themeColors.primary);
+      doc.setFontSize(9);
+      doc.text(status, 122, 41);
+
+      // Add client info with themed header
+      doc.setFontSize(11);
+      doc.setTextColor(...themeColors.primary);
+      doc.text("BILL TO:", 20, 68);
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(invoiceData.clientName || invoice.clientName || "", 20, 75);
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      doc.text(invoiceData.clientEmail || "", 20, 81);
+      const addressLines = (invoiceData.clientAddress || "").split("\n");
+      addressLines.forEach((line: string, i: number) => {
+        if (line.trim()) {
+          doc.text(line, 20, 87 + i * 5);
+        }
+      });
+
+      // Add items table with theme colors
+      const items = invoiceData.items || [];
+      const tableData = items.map((item: InvoiceItem) => [
+        item.name || "Item",
+        item.quantity?.toString() || "1",
+        `${currencySymbol}${(Number(item.price) || 0).toFixed(2)}`,
+        `${currencySymbol}${(
+          (Number(item.quantity) || 0) * (Number(item.price) || 0)
+        ).toFixed(2)}`,
+      ]);
+
+      if (tableData.length > 0) {
+        autoTable(doc, {
+          startY: 105,
+          head: [["Item", "Qty", "Price", "Total"]],
+          body: tableData,
+          theme: "striped",
+          headStyles: {
+            fillColor: themeColors.primary,
+            fontSize: 10,
+            fontStyle: "bold",
+            halign: "left",
+          },
+          bodyStyles: {
+            fontSize: 9,
+          },
+          alternateRowStyles: {
+            fillColor: [250, 250, 250],
+          },
+          columnStyles: {
+            1: { halign: "center" },
+            2: { halign: "right" },
+            3: { halign: "right" },
+          },
+        });
+      }
+
+      // Add totals with theme styling
+      const finalY = tableData.length > 0
+        ? ((doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 105) + 12
+        : 105;
+
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Subtotal:`, 130, finalY);
+      doc.text(
+        `${currencySymbol}${calculateSubtotal().toFixed(2)}`,
+        190,
+        finalY,
+        { align: "right" }
+      );
+      doc.text(
+        `Tax (${invoiceData.taxRate || 0}%):`,
+        130,
+        finalY + 7
+      );
+      doc.text(
+        `${currencySymbol}${calculateTax().toFixed(2)}`,
+        190,
+        finalY + 7,
+        { align: "right" }
+      );
+      doc.text(
+        `Discount (${invoiceData.discountRate || 0}%):`,
+        130,
+        finalY + 14
+      );
+      doc.setTextColor(220, 38, 38);
+      doc.text(
+        `-${currencySymbol}${calculateDiscount().toFixed(2)}`,
+        190,
+        finalY + 14,
+        { align: "right" }
+      );
+
+      // Total with theme color box
+      doc.setFillColor(...themeColors.secondary);
+      doc.roundedRect(125, finalY + 20, 65, 12, 2, 2, "F");
+      doc.setFontSize(12);
+      doc.setTextColor(...themeColors.primary);
+      doc.text(`Total:`, 130, finalY + 28);
+      doc.setFontSize(14);
+      doc.text(
+        `${currencySymbol}${calculateTotal().toFixed(2)}`,
+        190,
+        finalY + 28,
+        { align: "right" }
+      );
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text(
+        "Thank you for your business! Payment is due by the due date specified above.",
+        105,
+        finalY + 45,
+        { align: "center" }
+      );
+
+      // Add signature if available
+      if (signature) {
+        try {
+          doc.setFontSize(9);
+          doc.setTextColor(0, 0, 0);
+          doc.text("Authorized Signature:", 20, finalY + 60);
+          doc.addImage(signature, "PNG", 20, finalY + 65, 50, 20, undefined, "FAST");
+        } catch {
+          // Ignore signature image errors
+        }
+      }
+
+      // Save PDF
+      doc.save(
+        `invoice-${invoiceData.invoiceNumber || invoice.invoiceNumber}.pdf`
+      );
+      toast.success("PDF downloaded successfully");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF");
     }
   };
 
@@ -433,6 +768,7 @@ export default function Invoices() {
                             variant="ghost"
                             size="icon-sm"
                             title="Download PDF"
+                            onClick={() => downloadPDF(invoice.id)}
                           >
                             <Download className="h-4 w-4" />
                           </Button>
