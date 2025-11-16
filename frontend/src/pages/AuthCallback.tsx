@@ -8,7 +8,7 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         // Check authentication status (session cookie should be set by backend)
-        const response = await fetch('http://localhost:5000/api/auth/user', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/user`, {
           credentials: 'include',
         });
 

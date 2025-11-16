@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 export const initializePassport = () => {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-  const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/google-auth/google/callback";
+  const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL;
 
   // Configure Google OAuth Strategy only if credentials are provided
   if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {

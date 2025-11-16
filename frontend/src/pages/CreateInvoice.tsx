@@ -162,7 +162,7 @@ export default function CreateInvoice() {
           }
         } else if (isAuthenticated) {
           // Load from cloud
-          const response = await fetch(`http://localhost:5000/api/invoices/${id}`, {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}invoices/${id}`, {
             credentials: "include",
           });
           
@@ -544,7 +544,7 @@ export default function CreateInvoice() {
           navigate("/invoices");
         } else if (isAuthenticated) {
           // Update in cloud
-          const response = await fetch(`http://localhost:5000/api/invoices/${id}`, {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/invoices/${id}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -570,7 +570,7 @@ export default function CreateInvoice() {
         
         // Also sync to cloud if authenticated
         if (isAuthenticated) {
-          fetch("http://localhost:5000/api/invoices", {
+          fetch(`${import.meta.env.VITE_API_URL}/invoices`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

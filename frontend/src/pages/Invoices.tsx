@@ -137,7 +137,9 @@ export default function Invoices() {
         if (response.ok) {
           const data = await response.json();
           // API returns { invoices: [...] } format
-          const cloudInvoices = Array.isArray(data) ? data : (data.invoices || []);
+          const cloudInvoices = Array.isArray(data)
+            ? data
+            : data.invoices || [];
           setInvoices([
             ...localInvoices,
             ...cloudInvoices.map((inv: Invoice) => ({
@@ -183,7 +185,8 @@ export default function Invoices() {
       } else {
         // Delete cloud invoice
         const response = await fetch(
-          `http://localhost:5000/api/invoices/${deleteTarget.id}`,
+          `${import.meta.env.VITE_API_URL}/invoices/${deleteTarget.id}`,
+
           {
             method: "DELETE",
             credentials: "include",
@@ -195,7 +198,9 @@ export default function Invoices() {
         setInvoices((prev) => prev.filter((inv) => inv.id !== deleteTarget.id));
       }
 
-      toast.success(`Invoice ${deleteTarget.invoiceNumber} has been successfully deleted.`);
+      toast.success(
+        `Invoice ${deleteTarget.invoiceNumber} has been successfully deleted.`
+      );
     } catch (error) {
       console.error("Error deleting invoice:", error);
       toast.error("Something went wrong while deleting the invoice.");
@@ -240,7 +245,9 @@ export default function Invoices() {
       }
 
       const doc = new jsPDF();
-      const currencySymbol = getCurrencySymbol(invoiceData.currency || invoice.currency);
+      const currencySymbol = getCurrencySymbol(
+        invoiceData.currency || invoice.currency
+      );
 
       // Get theme colors for PDF
       const getThemeColors = (theme: string) => {
@@ -342,11 +349,7 @@ export default function Invoices() {
       // Add subtitle
       doc.setFontSize(9);
       doc.setTextColor(100, 100, 100);
-      doc.text(
-        "Professional Invoice",
-        invoiceData.companyLogo ? 42 : 20,
-        24
-      );
+      doc.text("Professional Invoice", invoiceData.companyLogo ? 42 : 20, 24);
 
       // Add invoice details with themed styling
       const issueDate = invoiceData.issueDate
@@ -429,9 +432,11 @@ export default function Invoices() {
       }
 
       // Add totals with theme styling
-      const finalY = tableData.length > 0
-        ? ((doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 105) + 12
-        : 105;
+      const finalY =
+        tableData.length > 0
+          ? ((doc as unknown as { lastAutoTable?: { finalY: number } })
+              .lastAutoTable?.finalY || 105) + 12
+          : 105;
 
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
@@ -442,11 +447,7 @@ export default function Invoices() {
         finalY,
         { align: "right" }
       );
-      doc.text(
-        `Tax (${invoiceData.taxRate || 0}%):`,
-        130,
-        finalY + 7
-      );
+      doc.text(`Tax (${invoiceData.taxRate || 0}%):`, 130, finalY + 7);
       doc.text(
         `${currencySymbol}${calculateTax().toFixed(2)}`,
         190,
@@ -496,7 +497,16 @@ export default function Invoices() {
           doc.setFontSize(9);
           doc.setTextColor(0, 0, 0);
           doc.text("Authorized Signature:", 20, finalY + 60);
-          doc.addImage(signature, "PNG", 20, finalY + 65, 50, 20, undefined, "FAST");
+          doc.addImage(
+            signature,
+            "PNG",
+            20,
+            finalY + 65,
+            50,
+            20,
+            undefined,
+            "FAST"
+          );
         } catch {
           // Ignore signature image errors
         }

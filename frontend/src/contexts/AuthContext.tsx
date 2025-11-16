@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/auth/user", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/user`, {
         credentials: "include",
       });
       
@@ -48,12 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = () => {
     // Redirect to Google OAuth
-    window.location.href = "http://localhost:5000/api/google-auth/google";
+    window.location.href = `${import.meta.env.VITE_API_URL}/google-auth/google`;
   };
 
   const logout = async () => {
     try {
-      await fetch("http://localhost:5000/api/auth/logout", {
+      await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Sync with backend
       if (localInvoices.length > 0) {
-        await fetch("http://localhost:5000/api/invoices/sync", {
+        await fetch(`${import.meta.env.VITE_API_URL}/invoices/sync`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
